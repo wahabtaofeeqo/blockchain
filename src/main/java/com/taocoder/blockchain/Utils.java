@@ -15,6 +15,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.util.ArrayList;
 import java.util.Base64;
 
 /**
@@ -78,5 +79,30 @@ public class Utils {
     
     public static String stringFromKey(Key key) {
         return Base64.getEncoder().encodeToString(key.getEncoded());
+    }
+    
+    public static String getMakleTree(ArrayList<Transaction> transactions) {
+        
+        int counts = transactions.size();
+        ArrayList<String> previousTreeLayer = new ArrayList<>();
+        for(Transaction t: transactions) {
+            previousTreeLayer.add(t.transactionID);
+        }
+        
+        ArrayList<String> treeLayer = previousTreeLayer;
+        
+        while(counts > 1) {
+            treeLayer = new ArrayList<>();
+            for(int i = 1; i < previousTreeLayer.size(); i++) {
+                treeLayer.add(Utils.sha256(previousTreeLayer.get(i - 1) + previousTreeLayer.get(i)));
+            }
+            
+            counts = treeLayer.size();
+            previousTreeLayer = treeLayer;
+        }
+        
+        String mt = (treeLayer.size() == 1) ? treeLayer.get(0) : "";
+        
+        return mt;
     }
 }

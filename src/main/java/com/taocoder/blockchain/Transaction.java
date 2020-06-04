@@ -45,9 +45,65 @@ public class Transaction {
         signature = Utils.applySignature(key, data);
     }
     
-    public boolean verifySignatue(PublicKey key) {
+    public boolean verifySignatue() {
         
          String data = Utils.stringFromKey(sender) + Utils.stringFromKey(receiver) + Float.toString(amount);
-        return Utils.verifySignature(key, data, signature);
+        return Utils.verifySignature(sender, data, signature);
+    }
+    
+    public boolean processTransaction() {
+        if(!verifySignatue()) {
+            System.out.println("#Transaction Signature Verification failed");
+            return false;
+        }
+        
+        for(TransactionInput input: inputs) {
+            input.UTXO = Blockchain.UTXOs.get(input.transactionOutputId);
+        }
+        
+        if(getInputValue() < Blockchain.minimumTransaction) {
+            System.out.println("#Transaction Input is too small");
+            return false;
+        }
+        
+        float balance = getInputValue();
+        float remain = balance - amount;
+        
+        transactionID = transactionHash();
+        outputs.add(new TransactionOutput(receiver, amount, transactionID)); // To sender
+        outputs.add(new TransactionOutput(sender, remain, transactionID));
+        
+        for(TransactionOutput out: outputs) {
+            Blockchain.UTXOs.put(out.transactionId, out);
+        }
+        
+        for(TransactionInput i: inputs) {
+            if(i.UTXO == null) continue;
+            Blockchain.UTXOs.remove(i.UTXO.id);
+        }
+        
+        return true;
+    }
+    
+    public float getInputValue() {
+        
+        float total = 0;
+        for(TransactionInput i: inputs) {
+            if(i.UTXO == null) continue;
+            total += i.UTXO.amount;
+        }
+        
+        return total;
+    }
+    
+    public float getOutputValue() {
+        
+        float total = 0;
+        for(TransactionOutput o: outputs) {
+            if(o == null) continue;
+            total += o.amount;
+        }
+        
+        return total;
     }
 }

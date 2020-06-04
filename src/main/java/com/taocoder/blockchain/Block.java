@@ -8,6 +8,7 @@ package com.taocoder.blockchain;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Date;
 import jdk.nashorn.internal.parser.JSONParser;
 
@@ -17,44 +18,27 @@ import jdk.nashorn.internal.parser.JSONParser;
  */
 public class Block {
     
-    private int index;
-    private long timestamp;
-    private String data;
+    public int index;
+    public long timestamp;
+    public ArrayList<Transaction> transactions = new ArrayList<>();
     
+    private String merkleRoot;
     private int nonce;
     public String previousHash;
     public String currentHash;
     
-    Block(String data, String hash) {
+    Block(String hash) {
       
-        this.data = data;
         this.previousHash = hash;
         this.timestamp = new Date().getTime();
+        
         this.currentHash = this.calculateHash();
     }
     
     public String calculateHash() {
        
-        try {
-            
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            String s = Long.toString(this.timestamp) + Integer.toString(nonce) + data + this.previousHash;
-            
-            StringBuilder sb = new StringBuilder();
-            
-            byte bytes[] = md.digest(s.getBytes(StandardCharsets.UTF_8));
-            for (int i = 0; i < bytes.length; i++) {
-                String hex = Integer.toHexString(0xff & bytes[i]);
-               
-                sb.append(hex);
-            }
-            
-            return sb.toString();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-        
-        return null;
+        String ch = Utils.sha256(previousHash + Long.toString(timestamp) + Integer.toString(nonce) + merkleRoot);
+        return ch;
     }
     
     public void mineBlock(int difficulty) {
@@ -66,5 +50,21 @@ public class Block {
         }
         
         System.out.println("New Block Mined!");
+    }
+    
+    public boolean addTransaction(Transaction transaction) {
+        
+        if(transaction == null) return false;
+        
+        if(!previousHash.equals("0")) {
+            if(!transaction.processTransaction()) {
+                System.out.println("#Transaction process failed.");
+                return false;
+            }
+        }
+        
+        transactions.add(transaction);
+        System.out.println("#Transaction processed and successfully added to Block");
+        return true;
     }
 }
