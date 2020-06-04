@@ -28,6 +28,7 @@ public class Blockchain {
     public static Transaction genesisTransaction;
     
     public static boolean validateChain() {
+        
         Block currentBlock;
         Block previousBlock;
         String target = new String(new char[DIFFICULTY]).replace('\0', '0');
